@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Themed Page</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #121212; /* Very dark background */
+            color: #fff; /* White text for contrast */
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 80%;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"], button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        input[type="text"] {
+            background-color: #1f1f1f; /* Darker than body for depth */
+            color: #fff;
+        }
+
+        button {
+            background-color: #3a0404; /* Bright color for the button */
+            color: #fff;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #860606; /* Lighter blue for hover effect */
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            background-color: #1a1a1a; /* Slightly lighter than body for visibility */
+            color: white;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* Aligns content to the bottom */
+            min-height: 90vh; /* Ensure it at least covers the viewport height */
+            margin-bottom: 1000px; /* Add some space at the bottom */
+            box-sizing: border-box;
+            margin-bottom: 0px;
+            padding-bottom: 0px;
+        }
+
+        .chat-log-container {
+            width: 100%; /* Use the full width of the container */
+            height: 50vh; /* Adjust the height as necessary */
+            overflow-y: auto; /* Add vertical scroll */
+            margin-bottom: 20px; /* Space between chat log and title */
+            padding: 10px;
+            box-sizing: border-box; /* Include padding in the height calculation */
+        }
+    </style>
+    </head>
+<body>
+    <div class="container">
+        <div class="chat-log-container">
+            <div id="chat-log">
+
+            </div>
+        </div>
+
+        <h1>Personal Assistant</h1>
+        <form action="">
+            <input type="text" name="message" id="message">
+            <button type="submit" class="btn">Submit</button>
+        </form>
+    </div>
+   <script>
+        let messages = []
+        const chatLog = document.getElementById('chat-log');
+        const message = document.getElementById('message');
+        const form = document.querySelector('form');
+        form.addEventListener('submit', (e) =>{
+            e.preventDefault();
+            const messageText = message.value;
+            const newMessage = {"role": "user", "content": `${messageText}`}
+            messages.push(newMessage)
+            message.value = '';
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.classList.add('message--sent');
+            messageElement.innerHTML = `<div class="message__text"><strong>You:</strong><br>${messageText}</div><br>`;
+            chatLog.appendChild(messageElement);
+            chatLog.scrollTop = chatLog.scrollHeight;
+            fetch('http://localhost:3000/views/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    messages
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log(data);
+                let newAssistantMessage = {"role": "assistant", "content": `${data.completion}`}
+                // Check if the data is a list (contains newline characters)
+                if (data.completion.includes('\n')) {
+                    // Split the data into lines
+                    const items = data.completion.split('\n');
+
+                    items.forEach(item => {
+                        // Create a new div for each item in the list
+                        const itemElement = document.createElement('div');
+                        itemElement.classList.add('list-item');
+                        itemElement.textContent = item;
+
+                        // Append this item element to your chat log
+                        chatLog.appendChild(itemElement);
+                    });
+                } else {
+                    // If it's not a list, just append the data as a single message
+                    const messageElement = document.createElement('div');
+                    messageElement.classList.add('message');
+                    messageElement.classList.add('message--received');
+                    messageElement.innerHTML = `<div class="message__text"><strong>Assistant:</strong><br>${data.completion}</div><br>`;
+                    chatLog.appendChild(messageElement);
+                }
+
+                // Add the assistant's message to the messages list and scroll to the bottom
+                messages.push(newAssistantMessage);
+                chatLog.scrollTop = chatLog.scrollHeight;
+            })
+        })
+    </script>
+</body>
+</html>
